@@ -197,18 +197,19 @@ export function renderInspectorHtml(config: MockGenConfig): string {
       }
       logsEl.innerHTML = currentLogs.map((log) => {
         const statusClass = log.response.status >= 400 ? '' : 'ok';
-        return `
-          <div class="log-card ${log.id === activeId ? 'active' : ''}" data-id="${log.id}">
-            <div class="log-row">
-              <div>${log.method} ${log.path}</div>
-              <span class="pill ${statusClass}">${log.response.status}</span>
-            </div>
-            <div class="log-row" style="color: var(--muted)">
-              <span>${new Date(log.timestamp).toLocaleTimeString()}</span>
-              <span>${log.response.latency} ms</span>
-            </div>
-          </div>
-        `;
+        const activeClass = log.id === activeId ? 'active' : '';
+        return (
+          '<div class="log-card ' + activeClass + '" data-id="' + log.id + '">' +
+            '<div class="log-row">' +
+              '<div>' + log.method + ' ' + log.path + '</div>' +
+              '<span class="pill ' + statusClass + '">' + log.response.status + '</span>' +
+            '</div>' +
+            '<div class="log-row" style="color: var(--muted)">' +
+              '<span>' + new Date(log.timestamp).toLocaleTimeString() + '</span>' +
+              '<span>' + log.response.latency + ' ms</span>' +
+            '</div>' +
+          '</div>'
+        );
       }).join('');
 
       document.querySelectorAll('.log-card').forEach((card) => {
@@ -236,7 +237,7 @@ export function renderInspectorHtml(config: MockGenConfig): string {
         renderLogs();
         stateEl.textContent = formatJson(stateJson.state ?? stateJson);
       } catch (error) {
-        logsEl.innerHTML = `<div>Failed to fetch logs: ${error}</div>`;
+        logsEl.innerHTML = '<div>Failed to fetch logs: ' + error + '</div>';
       }
     }
 
