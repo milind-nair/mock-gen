@@ -7,10 +7,11 @@ import https from 'node:https';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { DataGenerator } from './data-generator.js';
-import { loadSpec, listOperations, OperationSpec } from './spec.js';
+import { loadSpec, listOperations } from './spec.js';
 import { MockStore } from './state.js';
 import { RequestLogger } from './logger.js';
 import { MockGenConfig } from './config.js';
+import { renderInspectorHtml } from './inspector.js';
 
 interface RouteMeta {
   method: string;
@@ -29,6 +30,12 @@ interface RouteMeta {
 interface BuildResult {
   router: Router;
   routes: RouteMeta[];
+}
+
+export interface StartedServer {
+  server: http.Server | https.Server;
+  baseUrl: string;
+  close: () => Promise<void>;
 }
 
 function sleep(ms: number) {
@@ -311,7 +318,7 @@ function diffRoutes(prev: Set<string>, next: Set<string>) {
   return { added, removed };
 }
 
-export async function startServer(config: MockGenConfig) {
+export async function startServer(config: MockGenConfig): Promise<StartedServer> {
   const store = new MockStore();
   const logger = new RequestLogger(config.logging.maxEntries);
   const dataGen = new DataGenerator(config);
@@ -358,6 +365,12 @@ export async function startServer(config: MockGenConfig) {
     res.json({ state: store.snapshot() });
   });
 
+  if (config.inspector.enabled) {
+    app.get(config.endpoints.ui, (_req, res) => {
+      res.type('html').send(renderInspectorHtml(config));
+    });
+  }
+
   app.use((req, res, next) => currentRouter(req, res, next));
 
   const server = config.https
@@ -370,14 +383,20 @@ export async function startServer(config: MockGenConfig) {
       )
     : http.createServer(app);
 
-  server.listen(config.port, config.host, () => {
-    console.log('\nMock Server Generator');
-    console.log(`Spec: ${config.spec}`);
-    console.log(`Server: http://${config.host}:${config.port}`);
-    console.log(`Health: ${config.endpoints.health}`);
-    console.log(`Routes: ${currentRoutes.size}`);
-    console.log('');
+  await new Promise<void>((resolve) => {
+    server.listen(config.port, config.host, () => resolve());
   });
+
+  const address = server.address();
+  const port = typeof address === 'object' && address ? address.port : config.port;
+  const baseUrl = `http://${config.host}:${port}`;
+
+  console.log('\nMock Server Generator');
+  console.log(`Spec: ${config.spec}`);
+  console.log(`Server: ${baseUrl}`);
+  console.log(`Health: ${config.endpoints.health}`);
+  console.log(`Routes: ${currentRoutes.size}`);
+  console.log('');
 
   if (config.watch) {
     const watcher = chokidar.watch(config.spec, { ignoreInitial: true });
@@ -401,4 +420,10 @@ export async function startServer(config: MockGenConfig) {
       }
     });
   }
+
+  return {
+    server,
+    baseUrl,
+    close: () => new Promise((resolve) => server.close(() => resolve()))
+  };
 }

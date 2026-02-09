@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "tsx src/cli.ts",
     "build": "tsup src/cli.ts --format esm,cjs --dts --out-dir dist",
-    "start": "node dist/cli.js"
+    "start": "node dist/cli.js",
+    "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",

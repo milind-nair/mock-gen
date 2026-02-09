@@ -1,6 +1,9 @@
 import { Command } from 'commander';
 import { loadConfig, coerceNumber } from './config.js';
 import { startServer } from './server.js';
+import { startRecordingServer } from './record.js';
+import { startReplayServer } from './replay.js';
+import { parseStatusList } from './recording.js';
 
 const program = new Command();
 
@@ -37,18 +40,41 @@ program
 
 program
   .command('record')
-  .description('Record traffic from a real API (not yet implemented)')
-  .action(() => {
-    console.error('Record mode is not implemented yet.');
-    process.exit(1);
+  .description('Record traffic from a real API via a local proxy')
+  .requiredOption('-t, --target <url>', 'Target API base URL')
+  .option('-o, --output <path>', 'Output directory or file', 'recordings')
+  .option('-p, --port <number>', 'Port to run the proxy on', '3003')
+  .option('--host <host>', 'Host to bind to', '0.0.0.0')
+  .option('--include <pattern>', 'Only record paths matching substring or /regex/')
+  .option('--status <codes>', 'Only record responses with status codes (comma-separated)')
+  .action(async (options) => {
+    const statusFilter = parseStatusList(options.status);
+    await startRecordingServer({
+      target: options.target,
+      output: options.output,
+      host: options.host,
+      port: coerceNumber(options.port, 3003) ?? 3003,
+      include: options.include,
+      statusFilter
+    });
   });
 
 program
   .command('replay')
-  .description('Replay recorded traffic (not yet implemented)')
-  .action(() => {
-    console.error('Replay mode is not implemented yet.');
-    process.exit(1);
+  .description('Replay recorded traffic from a recording file')
+  .requiredOption('-r, --recording <path>', 'Path to recording JSON file')
+  .option('-p, --port <number>', 'Port to run the replay server on', '3004')
+  .option('--host <host>', 'Host to bind to', '0.0.0.0')
+  .option('--no-latency', 'Disable recorded latency playback')
+  .option('--no-loop', 'Stop advancing after the last matching recording')
+  .action(async (options) => {
+    await startReplayServer({
+      recording: options.recording,
+      host: options.host,
+      port: coerceNumber(options.port, 3004) ?? 3004,
+      loop: options.loop,
+      useLatency: options.latency
+    });
   });
 
 program

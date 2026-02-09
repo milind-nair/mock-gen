@@ -18,6 +18,11 @@ export interface MockGenConfig {
     health: string;
     logs: string;
     state: string;
+    ui: string;
+  };
+  inspector: {
+    enabled: boolean;
+    refreshMs: number;
   };
   data: {
     arrayMin: number;
@@ -49,7 +54,12 @@ const defaultConfig: MockGenConfig = {
   endpoints: {
     health: '/health',
     logs: '/__mock__/logs',
-    state: '/__mock__/state'
+    state: '/__mock__/state',
+    ui: '/__mock__/ui'
+  },
+  inspector: {
+    enabled: true,
+    refreshMs: 2000
   },
   data: {
     arrayMin: 1,
