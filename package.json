@@ -1,16 +1,26 @@
 {
-  "name": "mock-gen",
+  "name": "@milind-nair/mock-gen",
   "version": "0.1.0",
-  "private": true,
+  "description": "OpenAPI-based mock server generator with stateful CRUD, recording, and replay",
   "type": "module",
   "bin": {
     "mock-gen": "dist/cli.js"
   },
   "scripts": {
     "dev": "tsx src/cli.ts",
-    "build": "tsup src/cli.ts --format esm,cjs --dts --out-dir dist",
+    "build": "tsup src/cli.ts --format esm,cjs --dts --out-dir dist && node scripts/add-shebang.cjs",
     "start": "node dist/cli.js",
     "test": "tsx --test tests/*.test.ts"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "docs",
+    "examples",
+    "mock-gen.config.example.js"
+  ],
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.0",
